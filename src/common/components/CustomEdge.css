@@ -1,0 +1,5 @@
+/* CustomEdge.css */
+.react-flow__edge-path {
+    stroke: #222;
+    stroke-width: 2px;
+  }

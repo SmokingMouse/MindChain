@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 interface AddNodeModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onAddNode: (type: 'question' | 'data', x: number, y: number) => void;
+  onAddNode: (type: 'question' | 'data') => void;
   setNodeType: (type: 'question' | 'data') => void;
 }
 
@@ -18,7 +18,7 @@ const AddNodeModal: React.FC<AddNodeModalProps> = ({
 
   const handleAddNode = (type: 'question' | 'data') => {
     setNodeType(type);
-    onAddNode(type, x, y);
+    onAddNode(type);
   };
 
   if (!isOpen) {

@@ -16,10 +16,16 @@ import ReactFlow, {
   XYPosition
 } from 'reactflow';
 import 'reactflow/dist/style.css';
-import EditNodeModal from './EditNodeModal';
-import CustomNode  from './CustomNode';
-import AddNodeModal from './AddNodeModal';
+import EditNodeModal from './common/components/EditNodeModal';
+import CustomNode  from './common/components/CustomNode';
+import AddNodeModal from './common/components/AddNodeModal';
+import CustomEdge  from './common/components/CustomEdge';
 import './App.css';
+// import './common/components/CustomNode.css';
+import './common/components/CustomEdge.css';
+// import './common/components/EditNodeModal.css';
+// import './common/components/AddNodeModal.css';
+
 
 const initNodes = [
   {
@@ -34,14 +40,12 @@ const initNodes = [
   },
 ];
 
+const edgeTypes = {
+  'custom': CustomEdge,
+};
 
 const initEdges = [
-  {
-    id: 'e1-2',
-    source: '1',
-    target: '2',
-    animated: true,
-  },
+  { id: 'e1-2', source: '1', target: '2', type: 'custom', arrowHeadType: 'arrowclosed', animated: true },
 ];
 
 
@@ -57,9 +61,8 @@ const App: React.FC = () => {
   const [nodeType, setNodeType] = useState<'question' | 'data'>('question');
   const [doubleClickPos, setDoubleClickPos] = useState<XYPosition | null>(null)
 
-  const onConnect = (params: Connection) => {
-    setEdges((prevEdges) => addEdge(params, prevEdges));
-  };
+  const onConnect = (params: any) => setEdges((els) => addEdge({ ...params, type: 'custom', arrowHeadType: 'arrowclosed' }, els));
+
 
 
   const onNodeDoubleClick = (event: React.MouseEvent, node: Node) => {
@@ -82,7 +85,7 @@ const App: React.FC = () => {
     setModalIsOpen(false);
   };
 
-  const handleAddNode = (type: 'question' | 'data', x: number, y: number) => {
+  const handleAddNode = (type: 'question' | 'data') => {
     const newNode: Node = {
       id: (nodes.length + 1).toString(),
       data: { label: `Node ${nodes.length + 1}`, type },
@@ -126,8 +129,6 @@ const App: React.FC = () => {
 
   const nodeTypes = useMemo(() => ({ customNode: CustomNode }), []);
 
-
-
   return (
     <ReactFlowProvider>
       <div 
@@ -143,6 +144,7 @@ const App: React.FC = () => {
           zoomOnDoubleClick={false}
           onInit={onInstanceLoad}
           nodeTypes={nodeTypes}
+          edgeTypes={edgeTypes}
           >
           <Background />
           <MiniMap></MiniMap>
