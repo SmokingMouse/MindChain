@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef  } from 'react';
+import React, { useState, useCallback, useRef, useMemo } from 'react';
 import ReactFlow, {
   ReactFlowProvider,
   addEdge,
@@ -12,9 +12,13 @@ import ReactFlow, {
   MiniMap,
   Controls,
   ReactFlowInstance,
+  Position,
+  XYPosition
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import EditNodeModal from './EditNodeModal';
+import CustomNode  from './CustomNode';
+import AddNodeModal from './AddNodeModal';
 import './App.css';
 
 const initNodes = [
@@ -48,8 +52,10 @@ const App: React.FC = () => {
   const [modalIsOpen, setModalIsOpen] = useState(false);
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
   const [newLabel, setNewLabel] = useState('');
-  const reactFlowWrapper = useRef<HTMLDivElement>(null);
-
+  const [clickCount, setClickCount] = useState(0);
+  const [showAddNodeModal, setShowAddNodeModal] = useState(false);
+  const [nodeType, setNodeType] = useState<'question' | 'data'>('question');
+  const [doubleClickPos, setDoubleClickPos] = useState<XYPosition | null>(null)
 
   const onConnect = (params: Connection) => {
     setEdges((prevEdges) => addEdge(params, prevEdges));
@@ -76,9 +82,17 @@ const App: React.FC = () => {
     setModalIsOpen(false);
   };
 
-  const onLoad = useCallback((rfi: ReactFlowInstance) => {
-    setReactFlowInstance(rfi);
-  }, []);
+  const handleAddNode = (type: 'question' | 'data', x: number, y: number) => {
+    const newNode: Node = {
+      id: (nodes.length + 1).toString(),
+      data: { label: `Node ${nodes.length + 1}`, type },
+      position: doubleClickPos || { x: 0, y: 0 },
+      type: 'customNode',
+    };
+    addNode(newNode.position.x, newNode.position.y)
+    // setNodes((els) => els.concat(newNode));
+    setShowAddNodeModal(false);
+  };
 
   const addNode = (x: number, y: number) => {
     const newNode: Node = {
@@ -89,23 +103,35 @@ const App: React.FC = () => {
     setNodes((els) => els.concat(newNode));
   };
 
-  const onDoubleClick = useCallback((event: React.MouseEvent) => {
-    console.log('onDoubleClick')
-    if (reactFlowWrapper.current && reactFlowInstance) {
-      const { top, left } = reactFlowWrapper.current.getBoundingClientRect();
+  const handlePaneClick = (event: React.MouseEvent) => {
+    setClickCount((prevCount) => prevCount + 1);
+    setTimeout(() => {
+      setClickCount(0);
+    }, 300); // 重置双击计数器的时间间隔（毫秒）
 
-      const x = event.clientX - left;
-      const y = event.clientY - top;
-
-      addNode(x, y);
+    if (clickCount === 1 && reactFlowInstance) {
+      const position = reactFlowInstance.project({
+        x: event.pageX,
+        y: event.pageY,
+      });
+      setDoubleClickPos(position)
+      // addNode(position.x, position.y)
+      setShowAddNodeModal(true);
     }
-  }, [addNode, reactFlowInstance]);
+  };
+
+  const onInstanceLoad = (instance: ReactFlowInstance) => {
+    setReactFlowInstance(instance);
+  };
+
+  const nodeTypes = useMemo(() => ({ customNode: CustomNode }), []);
+
+
+
   return (
     <ReactFlowProvider>
       <div 
-        className='reactflow-wrapper' 
-        ref={reactFlowWrapper}
-        onDoubleClick={onDoubleClick}>
+        className='reactflow-wrapper'>
         <ReactFlow
           nodes={nodes}
           edges={edges}
@@ -113,15 +139,21 @@ const App: React.FC = () => {
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
           onNodeDoubleClick={onNodeDoubleClick}
-          // onPaneClick={onDoubleClick}
-          // onPaneClick={(event) => {
-          //   addNode(event.pageX, event.pageY);
-          // }}
-        >
+          onPaneClick={handlePaneClick}
+          zoomOnDoubleClick={false}
+          onInit={onInstanceLoad}
+          nodeTypes={nodeTypes}
+          >
           <Background />
           <MiniMap></MiniMap>
           <Controls></Controls>
         </ReactFlow>
+        <AddNodeModal
+          isOpen={showAddNodeModal}
+          onClose={() => setShowAddNodeModal(false)}
+          onAddNode={handleAddNode}
+          setNodeType={setNodeType}
+        />
 
         <EditNodeModal
           modalIsOpen={modalIsOpen}
